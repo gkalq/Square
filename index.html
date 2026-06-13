@@ -1,1023 +1,1102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Eisenhower Matrix</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Matrix</title>
   <style>
-    /* ── Reset & Base ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --q1: #dc2626;   --q1-light: #fef2f2;  --q1-mid: #fca5a5;
-      --q2: #2563eb;   --q2-light: #eff6ff;  --q2-mid: #93c5fd;
-      --q3: #d97706;   --q3-light: #fffbeb;  --q3-mid: #fcd34d;
-      --q4: #6b7280;   --q4-light: #f9fafb;  --q4-mid: #d1d5db;
-      --bg: #f1f5f9;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --radius: 14px;
-      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
-      --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
-      --transition: .18s ease;
+      --bg:      #0e0e1a;
+      --card:    #15152a;
+      --raised:  #1c1c33;
+      --hover:   #20203a;
+      --border:  #2a2a44;
+      --text:    #e4e4f4;
+      --dim:     #7878a0;
+      --muted:   #40405a;
+      --q1: #f87171;
+      --q2: #60a5fa;
+      --q3: #fbbf24;
+      --q4: #94a3b8;
+      --ease: .15s ease;
+      --r: 11px;
     }
+
+    html { height: 100%; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Header ───────────────────────────────────────────────── */
+    /* ── Header ─────────────────────────────────────────── */
     header {
-      background: var(--surface);
+      flex-shrink: 0;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 8px;
       border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow);
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
     .logo {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, #dc2626 0%, #dc2626 50%, #2563eb 50%, #2563eb 100%);
-      border-radius: 8px;
       display: grid;
-      place-items: center;
+      grid-template: 1fr 1fr / 1fr 1fr;
+      gap: 2.5px;
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      overflow: hidden;
       flex-shrink: 0;
     }
 
-    .logo svg { width: 18px; height: 18px; fill: white; }
+    .logo span { display: block; }
+    .logo .a { background: var(--q1); }
+    .logo .b { background: var(--q2); }
+    .logo .c { background: var(--q3); }
+    .logo .d { background: var(--q4); }
 
-    h1 {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -.3px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface);
+    .app-title {
+      font-size: 14px;
+      font-weight: 600;
       color: var(--text);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: var(--transition);
-      white-space: nowrap;
+      margin-right: auto;
     }
 
-    .btn:hover { background: var(--bg); border-color: #cbd5e1; }
-
-    .btn-danger { color: #dc2626; }
-    .btn-danger:hover { background: #fef2f2; border-color: #fca5a5; }
-
-    .btn-primary {
-      background: #0f172a;
-      color: white;
-      border-color: transparent;
-    }
-    .btn-primary:hover { background: #1e293b; }
-
-    /* ── Date bar ──────────────────────────────────────────────── */
-    .datebar {
-      text-align: center;
-      padding: 10px;
-      font-size: 13px;
-      color: var(--text-muted);
-      font-weight: 500;
-      letter-spacing: .3px;
+    .filter-group {
+      display: flex;
+      gap: 2px;
+      background: var(--raised);
+      padding: 3px;
+      border-radius: 7px;
     }
 
-    /* ── Matrix grid ──────────────────────────────────────────── */
-    .matrix {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto;
-      gap: 14px;
-      padding: 14px;
-      max-width: 1400px;
-      width: 100%;
-      margin: 0 auto;
-    }
-
-    /* ── Axis labels ───────────────────────────────────────────── */
-    .axis-wrapper {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      padding: 0 14px;
-      max-width: 1400px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .axis-label {
-      text-align: center;
+    .pill {
+      padding: 3px 10px;
       font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      color: var(--text-muted);
-      padding: 6px 0 2px;
+      font-weight: 500;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      transition: var(--ease);
+      font-family: inherit;
+      letter-spacing: .2px;
     }
 
-    /* ── Quadrant card ────────────────────────────────────────── */
-    .quadrant {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+    .pill.on { background: var(--hover); color: var(--text); }
+    .pill:not(.on):hover { color: var(--text); }
+
+    .hbtn {
+      width: 30px; height: 30px;
+      display: grid; place-items: center;
+      border: none; background: transparent;
+      color: var(--dim); cursor: pointer;
+      border-radius: 7px;
+      transition: var(--ease);
+    }
+
+    .hbtn:hover { background: var(--raised); color: var(--text); }
+    .hbtn svg { width: 15px; height: 15px; }
+
+    /* ── Progress ────────────────────────────────────────── */
+    .prog {
+      flex-shrink: 0;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--q2) 0%, var(--q1) 100%);
+      transition: width .4s ease;
+      width: 0%;
+    }
+
+    /* ── Grid ────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      overflow: hidden;
+      display: grid;
+      grid-template: 1fr 1fr / 1fr 1fr;
+      gap: 7px;
+      padding: 7px;
+    }
+
+    /* ── Quadrant ────────────────────────────────────────── */
+    .quad {
+      background: var(--card);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--qc);
       display: flex;
       flex-direction: column;
-      min-height: 340px;
       overflow: hidden;
-      border: 2px solid transparent;
-      transition: border-color var(--transition), box-shadow var(--transition);
+      transition: border-color var(--ease);
     }
 
-    .quadrant.drag-over {
-      border-color: currentColor;
-      box-shadow: var(--shadow-lg);
+    .q1 { --qc: var(--q1); }
+    .q2 { --qc: var(--q2); }
+    .q3 { --qc: var(--q3); }
+    .q4 { --qc: var(--q4); }
+
+    .quad.drag-over {
+      border-color: var(--qc);
+      background: color-mix(in srgb, var(--qc) 5%, var(--card));
     }
 
-    /* colour themes per quadrant */
-    .q1 { --qc: var(--q1); --qcl: var(--q1-light); --qcm: var(--q1-mid); color: var(--q1); }
-    .q2 { --qc: var(--q2); --qcl: var(--q2-light); --qcm: var(--q2-mid); color: var(--q2); }
-    .q3 { --qc: var(--q3); --qcl: var(--q3-light); --qcm: var(--q3-mid); color: var(--q3); }
-    .q4 { --qc: var(--q4); --qcl: var(--q4-light); --qcm: var(--q4-mid); color: var(--q4); }
-
-    /* header strip */
     .q-head {
-      padding: 14px 16px 12px;
-      border-bottom: 1px solid var(--border);
-      background: var(--qcl);
+      flex-shrink: 0;
+      height: 36px;
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .q-head-left { flex: 1; }
-
-    .q-label {
-      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.1px;
-      color: var(--qc);
-      margin-bottom: 3px;
+      padding: 0 10px 0 10px;
+      gap: 7px;
+      border-bottom: 1px solid var(--border);
     }
 
     .q-dot {
-      width: 7px; height: 7px;
+      width: 6px; height: 6px;
       border-radius: 50%;
       background: var(--qc);
       flex-shrink: 0;
     }
 
-    .q-title {
-      font-size: 16px;
+    .q-label {
+      font-size: 10px;
       font-weight: 700;
-      color: var(--text);
-      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: .9px;
+      color: var(--qc);
+      flex: 1;
     }
 
-    .q-subtitle {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      margin-top: 2px;
+    .q-badge {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--dim);
     }
 
-    .q-count {
-      min-width: 24px;
-      height: 24px;
-      padding: 0 7px;
-      background: var(--qcm);
-      border-radius: 12px;
+    .q-clr {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 4px;
+      transition: var(--ease);
+      font-family: inherit;
+      display: none;
+    }
+
+    .q-clr.show { display: block; }
+    .q-clr:hover { color: var(--q1); }
+
+    /* ── Input row ───────────────────────────────────────── */
+    .q-row {
+      flex-shrink: 0;
+      height: 36px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--qc);
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    /* input row */
-    .q-input-row {
-      display: flex;
-      gap: 8px;
-      padding: 10px 12px;
+      padding: 0 8px;
+      gap: 6px;
       border-bottom: 1px solid var(--border);
     }
 
     .q-input {
       flex: 1;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 7px 11px;
-      font-size: 13.5px;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 12.5px;
       font-family: inherit;
       color: var(--text);
-      background: var(--surface);
-      transition: border-color var(--transition), box-shadow var(--transition);
-      outline: none;
     }
 
-    .q-input::placeholder { color: #94a3b8; }
+    .q-input::placeholder { color: var(--muted); }
 
-    .q-input:focus {
-      border-color: var(--qc);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--qc) 15%, transparent);
-    }
-
-    .q-add-btn {
-      width: 34px; height: 34px;
-      border-radius: 8px;
+    .q-plus {
+      width: 22px; height: 22px;
+      border-radius: 5px;
       border: none;
       background: var(--qc);
       color: white;
-      font-size: 20px;
+      font-size: 16px;
       cursor: pointer;
-      display: grid;
-      place-items: center;
+      display: grid; place-items: center;
       flex-shrink: 0;
-      transition: opacity var(--transition), transform var(--transition);
       line-height: 1;
+      opacity: .65;
+      transition: opacity var(--ease);
     }
 
-    .q-add-btn:hover { opacity: .88; transform: scale(1.05); }
-    .q-add-btn:active { transform: scale(.96); }
+    .q-plus:hover { opacity: 1; }
 
-    /* task list */
-    .task-list {
+    /* ── Task list ───────────────────────────────────────── */
+    .q-list {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 0;
+      padding: 3px 0;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
     }
 
-    .task-empty {
+    .q-list::-webkit-scrollbar { width: 3px; }
+    .q-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .empty {
+      height: 100%;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100%;
-      min-height: 100px;
-      color: var(--text-muted);
-      font-size: 12.5px;
-      gap: 6px;
-      padding: 20px;
+      font-size: 11.5px;
+      color: var(--muted);
+      padding: 12px;
       text-align: center;
     }
 
-    .task-empty-icon { font-size: 28px; opacity: .4; }
-
-    .task-item {
+    /* ── Task item ───────────────────────────────────────── */
+    .task {
       display: flex;
       align-items: flex-start;
-      gap: 9px;
-      padding: 8px 14px;
-      border-radius: 8px;
-      margin: 2px 8px;
+      gap: 7px;
+      padding: 5px 10px 5px 12px;
+      min-height: 30px;
       cursor: grab;
-      transition: background var(--transition), opacity var(--transition);
-      position: relative;
+      transition: background var(--ease);
+      animation: fadein .12s ease;
     }
 
-    .task-item:hover { background: var(--qcl); }
-    .task-item.dragging { opacity: .4; cursor: grabbing; }
-    .task-item.completed { opacity: .55; }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(-3px); }
+      to   { opacity: 1; transform: none; }
+    }
 
-    .task-check {
-      width: 18px; height: 18px;
-      border-radius: 5px;
-      border: 2px solid var(--qcm);
+    .task:hover { background: var(--hover); }
+    .task.dragging { opacity: .25; cursor: grabbing; }
+
+    .task-cb {
+      width: 14px; height: 14px;
+      border-radius: 3px;
+      border: 1.5px solid var(--muted);
       flex-shrink: 0;
       cursor: pointer;
-      display: grid;
-      place-items: center;
-      transition: background var(--transition), border-color var(--transition);
-      margin-top: 1px;
+      display: grid; place-items: center;
+      margin-top: 2px;
+      transition: background var(--ease), border-color var(--ease);
     }
 
-    .task-check:hover { border-color: var(--qc); }
+    .task-cb:hover { border-color: var(--qc); }
+    .task.done .task-cb { background: var(--qc); border-color: var(--qc); }
 
-    .task-item.completed .task-check {
-      background: var(--qc);
-      border-color: var(--qc);
-    }
+    .tick { display: none; }
+    .task.done .tick { display: block; }
 
-    .task-check-mark {
-      width: 10px; height: 10px;
-      display: none;
-    }
-
-    .task-item.completed .task-check-mark { display: block; }
-
-    .task-check-mark path { stroke: white; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-
-    .task-text {
+    .task-txt {
       flex: 1;
-      font-size: 13.5px;
-      line-height: 1.45;
+      font-size: 12.5px;
+      line-height: 1.42;
       color: var(--text);
       word-break: break-word;
     }
 
-    .task-item.completed .task-text {
-      text-decoration: line-through;
-      color: var(--text-muted);
-    }
+    .task.done .task-txt { text-decoration: line-through; color: var(--muted); }
 
-    .task-text[contenteditable="true"] {
+    .task-txt[contenteditable="true"] {
       outline: none;
-      background: var(--qcl);
-      border-radius: 4px;
-      padding: 1px 4px;
-      margin: -1px -4px;
+      background: color-mix(in srgb, var(--qc) 10%, transparent);
+      border-radius: 3px;
+      padding: 0 3px;
+      margin: 0 -3px;
     }
 
-    .task-actions {
-      display: flex;
-      gap: 2px;
+    .task-del {
+      width: 18px; height: 18px;
+      border: none; background: transparent;
+      color: var(--muted); cursor: pointer;
+      border-radius: 4px;
+      display: grid; place-items: center;
       opacity: 0;
-      transition: opacity var(--transition);
+      transition: opacity var(--ease), background var(--ease), color var(--ease);
       flex-shrink: 0;
     }
 
-    .task-item:hover .task-actions { opacity: 1; }
+    .task:hover .task-del { opacity: 1; }
+    .task-del:hover { background: color-mix(in srgb, var(--q1) 15%, transparent); color: var(--q1); }
+    .task-del svg { width: 11px; height: 11px; }
 
-    .task-action-btn {
-      width: 24px; height: 24px;
-      border: none;
-      background: transparent;
-      border-radius: 5px;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      color: var(--text-muted);
-      transition: background var(--transition), color var(--transition);
-    }
-
-    .task-action-btn:hover { background: white; color: var(--text); }
-    .task-action-btn.del:hover { color: #dc2626; }
-
-    .task-action-btn svg { width: 13px; height: 13px; }
-
-    /* footer row per quadrant */
-    .q-footer {
-      padding: 8px 14px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .q-stats { font-size: 11.5px; color: var(--text-muted); }
-
-    .q-clear-btn {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 5px;
-      transition: background var(--transition), color var(--transition);
-    }
-
-    .q-clear-btn:hover { background: #fef2f2; color: #dc2626; }
-
-    /* ── Modal ────────────────────────────────────────────────── */
-    .modal-backdrop {
+    /* ── History panel ───────────────────────────────────── */
+    .overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.45);
-      backdrop-filter: blur(3px);
-      z-index: 200;
-      display: none;
-      place-items: center;
-      padding: 20px;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity .22s ease;
     }
 
-    .modal-backdrop.open { display: grid; }
+    .overlay.on { opacity: 1; pointer-events: all; }
+
+    .panel {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 320px; max-width: 88vw;
+      background: var(--card);
+      border-left: 1px solid var(--border);
+      z-index: 110;
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform .22s ease;
+    }
+
+    .panel.on { transform: none; }
+
+    .panel-head {
+      flex-shrink: 0;
+      height: 50px;
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title { flex: 1; font-size: 14px; font-weight: 600; }
+
+    .panel-clr {
+      font-size: 11px; color: var(--dim);
+      background: none; border: none; cursor: pointer;
+      transition: color var(--ease); font-family: inherit;
+    }
+
+    .panel-clr:hover { color: var(--q1); }
+
+    .close-btn {
+      width: 26px; height: 26px;
+      border: none; background: var(--raised);
+      border-radius: 6px; color: var(--dim);
+      cursor: pointer; display: grid; place-items: center;
+      transition: var(--ease);
+    }
+
+    .close-btn:hover { color: var(--text); }
+    .close-btn svg { width: 12px; height: 12px; }
+
+    .panel-body {
+      flex: 1; overflow-y: auto;
+      padding: 6px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .hist-empty {
+      height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: var(--muted);
+    }
+
+    .hist-date {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .8px;
+      color: var(--muted);
+      padding: 10px 14px 5px;
+    }
+
+    .hist-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px;
+      transition: background var(--ease);
+    }
+
+    .hist-row:hover { background: var(--hover); }
+
+    .hdot {
+      width: 5px; height: 5px;
+      border-radius: 50%; flex-shrink: 0;
+    }
+
+    .hist-text {
+      flex: 1; font-size: 12px; color: var(--dim);
+      word-break: break-word;
+    }
+
+    .hist-time { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+
+    .hist-restore {
+      width: 18px; height: 18px;
+      border: none; background: transparent;
+      color: var(--muted); cursor: pointer;
+      border-radius: 3px;
+      display: grid; place-items: center;
+      opacity: 0; transition: opacity var(--ease), color var(--ease);
+      flex-shrink: 0;
+    }
+
+    .hist-row:hover .hist-restore { opacity: 1; }
+    .hist-restore:hover { color: var(--q2); }
+    .hist-restore svg { width: 11px; height: 11px; }
+
+    /* ── Modal ───────────────────────────────────────────── */
+    .modal-wrap {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: grid; place-items: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .18s ease;
+    }
+
+    .modal-wrap.on { opacity: 1; pointer-events: all; }
 
     .modal {
-      background: var(--surface);
-      border-radius: 16px;
-      padding: 28px;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: var(--shadow-lg);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      max-width: 360px; width: 100%;
+      transform: scale(.96);
+      transition: transform .18s ease;
     }
 
-    .modal h2 { font-size: 18px; margin-bottom: 10px; }
-    .modal p { font-size: 14px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5; }
+    .modal-wrap.on .modal { transform: none; }
 
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 7px; }
 
-    /* ── Filter tabs ──────────────────────────────────────────── */
-    .filter-bar {
-      display: flex;
-      gap: 4px;
-      padding: 0 14px 4px;
-      max-width: 1400px;
-      margin: 0 auto;
-      width: 100%;
+    .modal p {
+      font-size: 12.5px; color: var(--dim);
+      line-height: 1.5; margin-bottom: 18px;
     }
 
-    .filter-tab {
-      padding: 5px 13px;
-      border-radius: 20px;
+    .modal-acts { display: flex; gap: 7px; justify-content: flex-end; }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 7px;
       border: 1px solid var(--border);
       background: transparent;
-      font-size: 12.5px;
-      font-weight: 500;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: var(--transition);
+      color: var(--dim);
+      font-size: 12.5px; font-weight: 500;
+      cursor: pointer; transition: var(--ease);
+      font-family: inherit;
     }
 
-    .filter-tab.active {
-      background: var(--text);
-      color: white;
+    .btn:hover { background: var(--raised); color: var(--text); }
+
+    .btn-ok {
+      background: var(--text); color: var(--bg);
       border-color: transparent;
     }
 
-    .filter-tab:not(.active):hover { background: var(--bg); }
+    .btn-ok:hover { opacity: .88; }
 
-    /* ── Progress bar ─────────────────────────────────────────── */
-    .progress-bar-wrap {
-      padding: 0 14px 2px;
-      max-width: 1400px;
-      margin: 0 auto;
-      width: 100%;
+    .btn-red {
+      background: color-mix(in srgb, var(--q1) 14%, transparent);
+      color: var(--q1); border-color: transparent;
     }
 
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11.5px;
-      color: var(--text-muted);
-      margin-bottom: 5px;
+    .btn-red:hover { background: color-mix(in srgb, var(--q1) 22%, transparent); }
+
+    /* ── Toast ───────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 12.5px; color: var(--text);
+      z-index: 300;
+      box-shadow: 0 8px 28px rgba(0,0,0,.45);
+      opacity: 0;
+      transition: transform .22s ease, opacity .22s ease;
+      white-space: nowrap;
     }
 
-    .progress-track {
-      height: 6px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
+    .toast.on {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
 
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--q2), var(--q1));
-      border-radius: 3px;
-      transition: width .4s ease;
+    .toast-undo {
+      background: none; border: none;
+      color: var(--q2); font-size: 12.5px; font-weight: 600;
+      cursor: pointer; font-family: inherit; padding: 0;
     }
 
-    /* ── Animations ───────────────────────────────────────────── */
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-8px); }
-      to   { opacity: 1; transform: translateY(0); }
+    /* ── Mobile fallback ─────────────────────────────────── */
+    @media (max-width: 580px) {
+      html { height: auto; }
+      body { height: auto; min-height: 100dvh; overflow: auto; }
+      main {
+        grid-template: repeat(4, auto) / 1fr;
+        height: auto; overflow: visible;
+      }
+      .quad { min-height: 220px; }
     }
 
-    .task-item { animation: slideIn .15s ease; }
-
-    /* ── Responsive ───────────────────────────────────────────── */
-    @media (max-width: 680px) {
-      h1 { font-size: 15px; }
-      .matrix { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
-      .axis-wrapper { grid-template-columns: 1fr; }
-      .axis-label:last-child { display: none; }
-      .quadrant { min-height: 260px; }
-      header { height: 56px; padding: 0 14px; }
-      .btn span { display: none; }
-    }
-
-    /* ── Scrollbar ────────────────────────────────────────────── */
-    .task-list::-webkit-scrollbar { width: 4px; }
-    .task-list::-webkit-scrollbar-track { background: transparent; }
-    .task-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    #fileIn { display: none; }
   </style>
 </head>
 <body>
 
-<!-- ══ Header ══════════════════════════════════════════════════════ -->
 <header>
-  <div class="header-left">
-    <div class="logo">
-      <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/></svg>
-    </div>
-    <h1>Eisenhower Matrix</h1>
+  <div class="logo">
+    <span class="a"></span><span class="b"></span>
+    <span class="c"></span><span class="d"></span>
   </div>
-  <div class="header-right">
-    <button class="btn" id="exportBtn">
-      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7">
-        <path d="M8 2v8M5 7l3 3 3-3M2 11v1a2 2 0 002 2h8a2 2 0 002-2v-1"/>
-      </svg>
-      <span>Export</span>
-    </button>
-    <button class="btn btn-danger" id="resetBtn">
-      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7">
-        <path d="M2 4h12M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9"/>
-      </svg>
-      <span>Clear all</span>
-    </button>
+  <span class="app-title">Matrix</span>
+
+  <div class="filter-group">
+    <button class="pill on" data-f="all">All</button>
+    <button class="pill" data-f="active">Active</button>
+    <button class="pill" data-f="done">Done</button>
   </div>
+
+  <button class="hbtn" id="hHistBtn" title="History (H)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  </button>
+
+  <button class="hbtn" id="hExportBtn" title="Export JSON">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  </button>
+
+  <button class="hbtn" id="hImportBtn" title="Import JSON">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  </button>
+
+  <button class="hbtn" id="hClearBtn" title="Clear all tasks">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+    </svg>
+  </button>
 </header>
 
-<!-- ══ Date / progress ════════════════════════════════════════════ -->
-<div class="datebar" id="datebar"></div>
+<div class="prog"><div class="prog-fill" id="progFill"></div></div>
 
-<div class="progress-bar-wrap">
-  <div class="progress-label">
-    <span id="progressLabel">0 of 0 tasks done</span>
-    <span id="progressPct">0%</span>
-  </div>
-  <div class="progress-track">
-    <div class="progress-fill" id="progressFill" style="width:0%"></div>
-  </div>
-</div>
-
-<!-- ══ Filter tabs ════════════════════════════════════════════════ -->
-<div class="filter-bar">
-  <button class="filter-tab active" data-filter="all">All</button>
-  <button class="filter-tab" data-filter="active">Active</button>
-  <button class="filter-tab" data-filter="completed">Completed</button>
-</div>
-
-<!-- ══ Axis labels ════════════════════════════════════════════════ -->
-<div class="axis-wrapper">
-  <div class="axis-label" style="color:#dc2626">⚡ Urgent</div>
-  <div class="axis-label" style="color:#2563eb">🕐 Not Urgent</div>
-</div>
-
-<!-- ══ 2×2 Matrix ═════════════════════════════════════════════════ -->
-<main class="matrix" id="matrix">
-
-  <!-- Q1: Important + Urgent -->
-  <div class="quadrant q1" data-q="q1" id="quad-q1">
+<main id="mx">
+  <!-- Q1 -->
+  <div class="quad q1" id="Q-q1" data-q="q1">
     <div class="q-head">
-      <div class="q-head-left">
-        <div class="q-label"><span class="q-dot"></span>Important · Urgent</div>
-        <div class="q-title">Do First</div>
-        <div class="q-subtitle">Handle immediately — these are top priority</div>
-      </div>
-      <div class="q-count" id="count-q1">0</div>
+      <div class="q-dot"></div>
+      <span class="q-label">Do First</span>
+      <span class="q-badge" id="badge-q1"></span>
+      <button class="q-clr" id="clr-q1" data-q="q1">clear done</button>
     </div>
-    <div class="q-input-row">
-      <input class="q-input" id="input-q1" placeholder="Add a task…" autocomplete="off" />
-      <button class="q-add-btn" data-q="q1" title="Add task (Enter)">+</button>
+    <div class="q-row">
+      <input class="q-input" id="in-q1" placeholder="Important · Urgent" autocomplete="off">
+      <button class="q-plus" data-q="q1">+</button>
     </div>
-    <div class="task-list" id="list-q1"></div>
-    <div class="q-footer">
-      <span class="q-stats" id="stats-q1"></span>
-      <button class="q-clear-btn" data-q="q1">Clear done</button>
-    </div>
+    <div class="q-list" id="L-q1"></div>
   </div>
 
-  <!-- Q2: Important + Not Urgent -->
-  <div class="quadrant q2" data-q="q2" id="quad-q2">
+  <!-- Q2 -->
+  <div class="quad q2" id="Q-q2" data-q="q2">
     <div class="q-head">
-      <div class="q-head-left">
-        <div class="q-label"><span class="q-dot"></span>Important · Not Urgent</div>
-        <div class="q-title">Schedule</div>
-        <div class="q-subtitle">Plan time for these — they grow you</div>
-      </div>
-      <div class="q-count" id="count-q2">0</div>
+      <div class="q-dot"></div>
+      <span class="q-label">Schedule</span>
+      <span class="q-badge" id="badge-q2"></span>
+      <button class="q-clr" id="clr-q2" data-q="q2">clear done</button>
     </div>
-    <div class="q-input-row">
-      <input class="q-input" id="input-q2" placeholder="Add a task…" autocomplete="off" />
-      <button class="q-add-btn" data-q="q2" title="Add task (Enter)">+</button>
+    <div class="q-row">
+      <input class="q-input" id="in-q2" placeholder="Important · Not Urgent" autocomplete="off">
+      <button class="q-plus" data-q="q2">+</button>
     </div>
-    <div class="task-list" id="list-q2"></div>
-    <div class="q-footer">
-      <span class="q-stats" id="stats-q2"></span>
-      <button class="q-clear-btn" data-q="q2">Clear done</button>
-    </div>
+    <div class="q-list" id="L-q2"></div>
   </div>
 
-  <!-- Q3: Not Important + Urgent -->
-  <div class="quadrant q3" data-q="q3" id="quad-q3">
+  <!-- Q3 -->
+  <div class="quad q3" id="Q-q3" data-q="q3">
     <div class="q-head">
-      <div class="q-head-left">
-        <div class="q-label"><span class="q-dot"></span>Not Important · Urgent</div>
-        <div class="q-title">Delegate</div>
-        <div class="q-subtitle">Pass these on — minimize your time here</div>
-      </div>
-      <div class="q-count" id="count-q3">0</div>
+      <div class="q-dot"></div>
+      <span class="q-label">Delegate</span>
+      <span class="q-badge" id="badge-q3"></span>
+      <button class="q-clr" id="clr-q3" data-q="q3">clear done</button>
     </div>
-    <div class="q-input-row">
-      <input class="q-input" id="input-q3" placeholder="Add a task…" autocomplete="off" />
-      <button class="q-add-btn" data-q="q3" title="Add task (Enter)">+</button>
+    <div class="q-row">
+      <input class="q-input" id="in-q3" placeholder="Not Important · Urgent" autocomplete="off">
+      <button class="q-plus" data-q="q3">+</button>
     </div>
-    <div class="task-list" id="list-q3"></div>
-    <div class="q-footer">
-      <span class="q-stats" id="stats-q3"></span>
-      <button class="q-clear-btn" data-q="q3">Clear done</button>
-    </div>
+    <div class="q-list" id="L-q3"></div>
   </div>
 
-  <!-- Q4: Not Important + Not Urgent -->
-  <div class="quadrant q4" data-q="q4" id="quad-q4">
+  <!-- Q4 -->
+  <div class="quad q4" id="Q-q4" data-q="q4">
     <div class="q-head">
-      <div class="q-head-left">
-        <div class="q-label"><span class="q-dot"></span>Not Important · Not Urgent</div>
-        <div class="q-title">Eliminate</div>
-        <div class="q-subtitle">Avoid or cut these — they drain time</div>
-      </div>
-      <div class="q-count" id="count-q4">0</div>
+      <div class="q-dot"></div>
+      <span class="q-label">Eliminate</span>
+      <span class="q-badge" id="badge-q4"></span>
+      <button class="q-clr" id="clr-q4" data-q="q4">clear done</button>
     </div>
-    <div class="q-input-row">
-      <input class="q-input" id="input-q4" placeholder="Add a task…" autocomplete="off" />
-      <button class="q-add-btn" data-q="q4" title="Add task (Enter)">+</button>
+    <div class="q-row">
+      <input class="q-input" id="in-q4" placeholder="Not Important · Not Urgent" autocomplete="off">
+      <button class="q-plus" data-q="q4">+</button>
     </div>
-    <div class="task-list" id="list-q4"></div>
-    <div class="q-footer">
-      <span class="q-stats" id="stats-q4"></span>
-      <button class="q-clear-btn" data-q="q4">Clear done</button>
-    </div>
+    <div class="q-list" id="L-q4"></div>
   </div>
-
 </main>
 
-<!-- ══ Confirm modal ══════════════════════════════════════════════ -->
-<div class="modal-backdrop" id="modalBackdrop">
+<!-- History panel -->
+<div class="overlay" id="ov"></div>
+<div class="panel" id="histPanel">
+  <div class="panel-head">
+    <span class="panel-title">History</span>
+    <button class="panel-clr" id="histClrAll">Clear all</button>
+    <button class="close-btn" id="histClose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="panel-body" id="histBody"></div>
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-wrap" id="confirmWrap">
   <div class="modal">
-    <h2 id="modalTitle">Clear all tasks?</h2>
-    <p id="modalBody">This will permanently delete all tasks across every quadrant. This cannot be undone.</p>
-    <div class="modal-actions">
-      <button class="btn" id="modalCancel">Cancel</button>
-      <button class="btn btn-danger btn-primary" id="modalConfirm">Delete</button>
+    <h2 id="confTitle"></h2>
+    <p id="confBody"></p>
+    <div class="modal-acts">
+      <button class="btn" id="confCancel">Cancel</button>
+      <button class="btn btn-red" id="confOk"></button>
     </div>
   </div>
 </div>
 
+<!-- Import modal -->
+<div class="modal-wrap" id="importWrap">
+  <div class="modal">
+    <h2>Import</h2>
+    <p id="importBody"></p>
+    <div class="modal-acts">
+      <button class="btn" id="importCancel">Cancel</button>
+      <button class="btn btn-ok" id="importOk">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastMsg"></span>
+  <button class="toast-undo" id="toastUndo" style="display:none">Undo</button>
+</div>
+
+<input type="file" id="fileIn" accept=".json">
+
 <script>
-  // ── State ──────────────────────────────────────────────────────
-  const QUADS = ['q1','q2','q3','q4'];
-  const STORAGE_KEY = 'eisenhower_v1';
+'use strict';
 
-  let state = load();
-  let filter = 'all';
-  let dragSrc = null;        // { quad, id }
-  let pendingClear = null;   // fn to run on confirm
+const QS = ['q1','q2','q3','q4'];
+const QC = { q1:'#f87171', q2:'#60a5fa', q3:'#fbbf24', q4:'#94a3b8' };
+const SK = 'mx3', HK = 'mxh3';
 
-  function emptyQuad() { return []; }
+let S = load(SK, { q1:[], q2:[], q3:[], q4:[] });
+let H = load(HK, []);
+let filt = 'all';
+let drag = null;
+let confFn = null;
+let importData = null;
+let toastTmr = null;
 
-  function defaultState() {
-    return { q1: [], q2: [], q3: [], q4: [] };
+// ── Persistence ───────────────────────────────────────────
+function load(k, d) {
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; }
+}
+function persist() {
+  localStorage.setItem(SK, JSON.stringify(S));
+  localStorage.setItem(HK, JSON.stringify(H));
+}
+
+// ── Helpers ───────────────────────────────────────────────
+const uid = () => crypto.randomUUID();
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function fmtDate(ts) {
+  const d = new Date(ts), n = new Date();
+  const diff = new Date(n.getFullYear(), n.getMonth(), n.getDate()) -
+               new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (diff === 0) return 'Today';
+  if (diff === 86400000) return 'Yesterday';
+  return d.toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' });
+}
+
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+}
+
+function snap() {
+  return { S: JSON.parse(JSON.stringify(S)), H: JSON.parse(JSON.stringify(H)) };
+}
+
+// ── Render ────────────────────────────────────────────────
+function render() {
+  QS.forEach(renderQ);
+  const total = QS.reduce((n,q) => n + S[q].length, 0);
+  const done  = QS.reduce((n,q) => n + S[q].filter(t=>t.done).length, 0);
+  document.getElementById('progFill').style.width = total ? `${done/total*100}%` : '0%';
+  document.title = total ? `Matrix (${done}/${total})` : 'Matrix';
+  persist();
+}
+
+function renderQ(q) {
+  const list  = document.getElementById(`L-${q}`);
+  const badge = document.getElementById(`badge-${q}`);
+  const clrBtn = document.getElementById(`clr-${q}`);
+  const all  = S[q];
+  const done = all.filter(t=>t.done).length;
+
+  badge.textContent = filt === 'done' ? done : filt === 'active' ? all.length - done : all.length;
+  clrBtn.classList.toggle('show', done > 0 && filt !== 'active');
+
+  const vis = all.filter(t => filt==='active'?!t.done : filt==='done'?t.done : true);
+
+  if (!vis.length) {
+    const m = filt==='done'?'No completed tasks':filt==='active'?'No active tasks':'Add a task above';
+    list.innerHTML = `<div class="empty">${m}</div>`;
+    return;
   }
 
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch(e) {}
-    return defaultState();
-  }
+  list.innerHTML = '';
+  vis.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'task' + (t.done ? ' done' : '');
+    el.dataset.id = t.id; el.dataset.q = q;
+    el.draggable = true;
+    el.innerHTML = `
+      <div class="task-cb" data-id="${t.id}" data-q="${q}">
+        <svg class="tick" width="9" height="9" viewBox="0 0 9 9" fill="none">
+          <path d="M1.5 4.5L3.5 7 7.5 2" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="task-txt" data-id="${t.id}" data-q="${q}">${esc(t.text)}</div>
+      <button class="task-del" data-id="${t.id}" data-q="${q}" title="Delete">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>`;
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragend', onDragEnd);
+    list.appendChild(el);
+  });
+}
 
-  function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
+function renderHist() {
+  const body = document.getElementById('histBody');
+  if (!H.length) { body.innerHTML = '<div class="hist-empty">No history yet</div>'; return; }
 
-  function newTask(text) {
-    return { id: crypto.randomUUID(), text, done: false, created: Date.now() };
-  }
+  const groups = {};
+  [...H].reverse().forEach(item => {
+    const k = fmtDate(item.at);
+    (groups[k] = groups[k] || []).push(item);
+  });
 
-  // ── Date bar ──────────────────────────────────────────────────
-  function updateDatebar() {
-    const now = new Date();
-    const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-    document.getElementById('datebar').textContent = now.toLocaleDateString(undefined, opts);
-  }
-
-  // ── Render ────────────────────────────────────────────────────
-  function render() {
-    QUADS.forEach(q => renderQuad(q));
-    renderProgress();
-    save();
-  }
-
-  function renderQuad(q) {
-    const tasks = state[q];
-    const list = document.getElementById(`list-${q}`);
-    const countEl = document.getElementById(`count-${q}`);
-    const statsEl = document.getElementById(`stats-${q}`);
-
-    const visible = tasks.filter(t => {
-      if (filter === 'active') return !t.done;
-      if (filter === 'completed') return t.done;
-      return true;
-    });
-
-    const total = tasks.length;
-    const done  = tasks.filter(t => t.done).length;
-    countEl.textContent = total;
-    statsEl.textContent = total ? `${done}/${total} done` : '';
-
-    if (visible.length === 0) {
-      const msg = filter === 'completed'
-        ? 'No completed tasks'
-        : filter === 'active'
-        ? 'No active tasks'
-        : 'No tasks yet — add one above';
-      list.innerHTML = `<div class="task-empty"><span class="task-empty-icon">${filter === 'completed' ? '✓' : '✦'}</span>${msg}</div>`;
-      return;
-    }
-
-    list.innerHTML = '';
-    visible.forEach(task => {
-      const item = document.createElement('div');
-      item.className = 'task-item' + (task.done ? ' completed' : '');
-      item.dataset.id = task.id;
-      item.dataset.q  = q;
-      item.draggable  = true;
-
-      item.innerHTML = `
-        <div class="task-check" data-id="${task.id}" data-q="${q}" title="Toggle done">
-          <svg class="task-check-mark" viewBox="0 0 10 10" fill="none">
-            <path d="M1.5 5.5L4 8l4.5-5" />
+  body.innerHTML = '';
+  for (const [label, items] of Object.entries(groups)) {
+    const d = document.createElement('div');
+    d.className = 'hist-date'; d.textContent = label;
+    body.appendChild(d);
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'hist-row';
+      row.innerHTML = `
+        <span class="hdot" style="background:${QC[item.q]}"></span>
+        <span class="hist-text">${esc(item.text)}</span>
+        <span class="hist-time">${fmtTime(item.at)}</span>
+        <button class="hist-restore" data-id="${item.id}" title="Restore to quadrant">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
           </svg>
-        </div>
-        <div class="task-text" data-id="${task.id}" data-q="${q}"
-             title="Double-click to edit">${escHtml(task.text)}</div>
-        <div class="task-actions">
-          <button class="task-action-btn del" data-id="${task.id}" data-q="${q}" title="Delete">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M2 4h12M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9"/>
-            </svg>
-          </button>
-        </div>`;
-
-      // drag events
-      item.addEventListener('dragstart', onDragStart);
-      item.addEventListener('dragend',   onDragEnd);
-
-      list.appendChild(item);
+        </button>`;
+      row.querySelector('.hist-restore').addEventListener('click', () => restoreHist(item));
+      body.appendChild(row);
     });
   }
+}
 
-  function renderProgress() {
-    let total = 0, done = 0;
-    QUADS.forEach(q => {
-      total += state[q].length;
-      done  += state[q].filter(t => t.done).length;
-    });
-    const pct = total ? Math.round((done / total) * 100) : 0;
-    document.getElementById('progressLabel').textContent = `${done} of ${total} task${total !== 1 ? 's' : ''} done`;
-    document.getElementById('progressPct').textContent   = `${pct}%`;
-    document.getElementById('progressFill').style.width  = `${pct}%`;
-  }
-
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  // ── Add task ──────────────────────────────────────────────────
-  function addTask(q) {
-    const input = document.getElementById(`input-${q}`);
-    const text  = input.value.trim();
-    if (!text) return;
-    state[q].unshift(newTask(text));
-    input.value = '';
-    render();
-    input.focus();
-  }
-
-  // ── Toggle done ───────────────────────────────────────────────
-  function toggleTask(q, id) {
-    const t = state[q].find(t => t.id === id);
-    if (t) { t.done = !t.done; render(); }
-  }
-
-  // ── Delete task ───────────────────────────────────────────────
-  function deleteTask(q, id) {
-    state[q] = state[q].filter(t => t.id !== id);
-    render();
-  }
-
-  // ── Clear completed ───────────────────────────────────────────
-  function clearDone(q) {
-    if (!state[q].some(t => t.done)) return;
-    pendingClear = () => { state[q] = state[q].filter(t => !t.done); render(); };
-    openModal('Clear completed tasks?', `Remove all completed tasks from this quadrant?`, 'Clear');
-  }
-
-  // ── Clear all ─────────────────────────────────────────────────
-  function clearAll() {
-    pendingClear = () => { state = defaultState(); render(); };
-    openModal('Clear all tasks?', 'This will permanently delete all tasks across every quadrant. This cannot be undone.', 'Delete all');
-  }
-
-  // ── Edit task (double-click) ───────────────────────────────────
-  function startEdit(el, q, id) {
-    el.contentEditable = 'true';
-    el.focus();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-
-    function finish() {
-      el.contentEditable = 'false';
-      const newText = el.textContent.trim();
-      const t = state[q].find(t => t.id === id);
-      if (t && newText) { t.text = newText; save(); }
-      else { render(); }
-      el.removeEventListener('blur', finish);
-      el.removeEventListener('keydown', onKey);
-    }
-
-    function onKey(e) {
-      if (e.key === 'Enter') { e.preventDefault(); finish(); }
-      if (e.key === 'Escape') { render(); }
-    }
-
-    el.addEventListener('blur', finish);
-    el.addEventListener('keydown', onKey);
-  }
-
-  // ── Drag & Drop ───────────────────────────────────────────────
-  function onDragStart(e) {
-    const item = e.currentTarget;
-    dragSrc = { q: item.dataset.q, id: item.dataset.id };
-    item.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', dragSrc.id);
-  }
-
-  function onDragEnd(e) {
-    e.currentTarget.classList.remove('dragging');
-    document.querySelectorAll('.quadrant').forEach(el => el.classList.remove('drag-over'));
-  }
-
-  QUADS.forEach(q => {
-    const quad = document.getElementById(`quad-${q}`);
-    quad.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      quad.classList.add('drag-over');
-    });
-    quad.addEventListener('dragleave', e => {
-      if (!quad.contains(e.relatedTarget)) quad.classList.remove('drag-over');
-    });
-    quad.addEventListener('drop', e => {
-      e.preventDefault();
-      quad.classList.remove('drag-over');
-      if (!dragSrc) return;
-      const { q: srcQ, id } = dragSrc;
-      if (srcQ === q) return;
-      const taskIdx = state[srcQ].findIndex(t => t.id === id);
-      if (taskIdx === -1) return;
-      const [task] = state[srcQ].splice(taskIdx, 1);
-      state[q].unshift(task);
-      dragSrc = null;
-      render();
-    });
-  });
-
-  // ── Modal ─────────────────────────────────────────────────────
-  function openModal(title, body, confirmLabel) {
-    document.getElementById('modalTitle').textContent   = title;
-    document.getElementById('modalBody').textContent    = body;
-    document.getElementById('modalConfirm').textContent = confirmLabel;
-    document.getElementById('modalBackdrop').classList.add('open');
-  }
-
-  function closeModal() {
-    document.getElementById('modalBackdrop').classList.remove('open');
-    pendingClear = null;
-  }
-
-  document.getElementById('modalCancel').addEventListener('click', closeModal);
-  document.getElementById('modalBackdrop').addEventListener('click', e => {
-    if (e.target === document.getElementById('modalBackdrop')) closeModal();
-  });
-  document.getElementById('modalConfirm').addEventListener('click', () => {
-    if (pendingClear) { pendingClear(); }
-    closeModal();
-  });
-
-  // ── Export ────────────────────────────────────────────────────
-  function exportTasks() {
-    const labels = {
-      q1: 'Do First (Important · Urgent)',
-      q2: 'Schedule (Important · Not Urgent)',
-      q3: 'Delegate (Not Important · Urgent)',
-      q4: 'Eliminate (Not Important · Not Urgent)',
-    };
-    const now = new Date().toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-    let text = `Eisenhower Matrix — ${now}\n${'═'.repeat(52)}\n\n`;
-    QUADS.forEach(q => {
-      text += `${labels[q]}\n${'─'.repeat(40)}\n`;
-      if (state[q].length === 0) {
-        text += '  (empty)\n';
-      } else {
-        state[q].forEach(t => {
-          text += `  ${t.done ? '[x]' : '[ ]'} ${t.text}\n`;
-        });
-      }
-      text += '\n';
-    });
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `eisenhower-${new Date().toISOString().slice(0,10)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // ── Event delegation ──────────────────────────────────────────
-  document.getElementById('matrix').addEventListener('click', e => {
-    // add button
-    const addBtn = e.target.closest('.q-add-btn');
-    if (addBtn) { addTask(addBtn.dataset.q); return; }
-
-    // checkbox
-    const check = e.target.closest('.task-check');
-    if (check) { toggleTask(check.dataset.q, check.dataset.id); return; }
-
-    // delete
-    const del = e.target.closest('.task-action-btn.del');
-    if (del) { deleteTask(del.dataset.q, del.dataset.id); return; }
-
-    // clear done
-    const clr = e.target.closest('.q-clear-btn');
-    if (clr) { clearDone(clr.dataset.q); return; }
-  });
-
-  // Double-click to edit
-  document.getElementById('matrix').addEventListener('dblclick', e => {
-    const textEl = e.target.closest('.task-text');
-    if (textEl) { startEdit(textEl, textEl.dataset.q, textEl.dataset.id); }
-  });
-
-  // Enter to add
-  QUADS.forEach(q => {
-    document.getElementById(`input-${q}`).addEventListener('keydown', e => {
-      if (e.key === 'Enter') addTask(q);
-    });
-  });
-
-  // Filter tabs
-  document.querySelectorAll('.filter-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      filter = tab.dataset.filter;
-      render();
-    });
-  });
-
-  // Header buttons
-  document.getElementById('resetBtn').addEventListener('click', clearAll);
-  document.getElementById('exportBtn').addEventListener('click', exportTasks);
-
-  // Keyboard shortcut: Escape closes modal
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
-  });
-
-  // ── Boot ──────────────────────────────────────────────────────
-  updateDatebar();
+// ── Task ops ──────────────────────────────────────────────
+function addTask(q) {
+  const inp = document.getElementById(`in-${q}`);
+  const txt = inp.value.trim();
+  if (!txt) return;
+  S[q].unshift({ id: uid(), text: txt, done: false, at: Date.now() });
+  inp.value = '';
   render();
+  inp.focus();
+}
+
+function toggleTask(q, id) {
+  const t = S[q].find(t => t.id === id);
+  if (t) { t.done = !t.done; render(); }
+}
+
+function deleteTask(q, id) {
+  const bk = snap();
+  S[q] = S[q].filter(t => t.id !== id);
+  render();
+  toast('Task deleted', () => { S = bk.S; H = bk.H; render(); });
+}
+
+function clearDone(q) {
+  const done = S[q].filter(t => t.done);
+  if (!done.length) return;
+  const now = Date.now();
+  done.forEach(t => H.push({ id: uid(), text: t.text, q, at: now }));
+  if (H.length > 1000) H = H.slice(-1000);
+  S[q] = S[q].filter(t => !t.done);
+  render();
+  toast(`${done.length} task${done.length>1?'s':''} archived`);
+}
+
+function clearAll() {
+  openConfirm('Clear all tasks?',
+    'Completed tasks move to history. Active tasks are removed permanently.',
+    'Clear all', () => {
+      const now = Date.now();
+      QS.forEach(q => {
+        S[q].filter(t=>t.done).forEach(t => H.push({ id: uid(), text: t.text, q, at: now }));
+        S[q] = [];
+      });
+      if (H.length > 1000) H = H.slice(-1000);
+      render();
+    });
+}
+
+function restoreHist(item) {
+  S[item.q].unshift({ id: uid(), text: item.text, done: false, at: Date.now() });
+  H = H.filter(h => h.id !== item.id);
+  render();
+  renderHist();
+  toast('Task restored');
+}
+
+// ── Edit ──────────────────────────────────────────────────
+function startEdit(el, q, id) {
+  el.contentEditable = 'true';
+  el.focus();
+  const r = document.createRange();
+  r.selectNodeContents(el);
+  const s = window.getSelection();
+  s.removeAllRanges(); s.addRange(r);
+
+  const finish = () => {
+    el.contentEditable = 'false';
+    const t = S[q].find(t => t.id === id);
+    const txt = el.textContent.trim();
+    if (t && txt) t.text = txt; else render();
+    persist();
+    el.removeEventListener('blur', finish);
+    el.removeEventListener('keydown', onK);
+  };
+  const onK = e => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') render();
+  };
+  el.addEventListener('blur', finish);
+  el.addEventListener('keydown', onK);
+}
+
+// ── Drag ─────────────────────────────────────────────────
+function onDragStart(e) {
+  drag = { q: e.currentTarget.dataset.q, id: e.currentTarget.dataset.id };
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.quad').forEach(q => q.classList.remove('drag-over'));
+}
+
+QS.forEach(q => {
+  const el = document.getElementById(`Q-${q}`);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    if (!drag || drag.q === q) { drag = null; return; }
+    const i = S[drag.q].findIndex(t => t.id === drag.id);
+    if (i < 0) { drag = null; return; }
+    const [task] = S[drag.q].splice(i, 1);
+    S[q].unshift(task);
+    drag = null;
+    render();
+  });
+});
+
+// ── Confirm modal ─────────────────────────────────────────
+function openConfirm(title, body, label, fn) {
+  confFn = fn;
+  document.getElementById('confTitle').textContent = title;
+  document.getElementById('confBody').textContent  = body;
+  document.getElementById('confOk').textContent    = label;
+  document.getElementById('confirmWrap').classList.add('on');
+}
+
+document.getElementById('confCancel').onclick = () => {
+  document.getElementById('confirmWrap').classList.remove('on'); confFn = null;
+};
+document.getElementById('confOk').onclick = () => {
+  document.getElementById('confirmWrap').classList.remove('on');
+  if (confFn) { confFn(); confFn = null; }
+};
+document.getElementById('confirmWrap').addEventListener('click', e => {
+  if (e.target === document.getElementById('confirmWrap')) {
+    document.getElementById('confirmWrap').classList.remove('on'); confFn = null;
+  }
+});
+
+// ── Import / Export ───────────────────────────────────────
+document.getElementById('hExportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify({ v:3, at: new Date().toISOString(), tasks: S, history: H }, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), { href: url, download: `matrix-${new Date().toISOString().slice(0,10)}.json` });
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported');
+};
+
+document.getElementById('hImportBtn').onclick = () => document.getElementById('fileIn').click();
+
+document.getElementById('fileIn').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!d.tasks) throw new Error();
+      importData = d;
+      const tc = QS.reduce((n,q) => n + (d.tasks[q]?.length||0), 0);
+      const hc = (d.history||[]).length;
+      document.getElementById('importBody').textContent =
+        `Load ${tc} task${tc!==1?'s':''} and ${hc} history item${hc!==1?'s':''}? Current data will be replaced.`;
+      document.getElementById('importWrap').classList.add('on');
+    } catch { toast('Invalid file'); }
+    e.target.value = '';
+  };
+  r.readAsText(f);
+});
+
+document.getElementById('importCancel').onclick = () => {
+  document.getElementById('importWrap').classList.remove('on'); importData = null;
+};
+document.getElementById('importOk').onclick = () => {
+  document.getElementById('importWrap').classList.remove('on');
+  if (!importData) return;
+  QS.forEach(q => { S[q] = importData.tasks[q] || []; });
+  H = importData.history || [];
+  importData = null;
+  render();
+  toast('Imported successfully');
+};
+document.getElementById('importWrap').addEventListener('click', e => {
+  if (e.target === document.getElementById('importWrap')) {
+    document.getElementById('importWrap').classList.remove('on'); importData = null;
+  }
+});
+
+// ── History panel ─────────────────────────────────────────
+function openHist() {
+  renderHist();
+  document.getElementById('histPanel').classList.add('on');
+  document.getElementById('ov').classList.add('on');
+}
+function closeHist() {
+  document.getElementById('histPanel').classList.remove('on');
+  document.getElementById('ov').classList.remove('on');
+}
+
+document.getElementById('hHistBtn').onclick = openHist;
+document.getElementById('histClose').onclick = closeHist;
+document.getElementById('ov').onclick = closeHist;
+document.getElementById('histClrAll').onclick = () => {
+  if (!H.length) return;
+  openConfirm('Clear history?', 'Permanently remove all history entries.', 'Clear', () => {
+    H = []; persist(); renderHist();
+  });
+};
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg, undoFn) {
+  clearTimeout(toastTmr);
+  const el = document.getElementById('toast');
+  const ub = document.getElementById('toastUndo');
+  document.getElementById('toastMsg').textContent = msg;
+  ub.style.display = undoFn ? 'inline' : 'none';
+  ub.onclick = undoFn ? () => { undoFn(); hideToast(); } : null;
+  el.classList.add('on');
+  toastTmr = setTimeout(hideToast, 3000);
+}
+function hideToast() { document.getElementById('toast').classList.remove('on'); }
+
+// ── Event delegation ──────────────────────────────────────
+document.getElementById('mx').addEventListener('click', e => {
+  const cb  = e.target.closest('.task-cb');   if (cb)  { toggleTask(cb.dataset.q, cb.dataset.id); return; }
+  const del = e.target.closest('.task-del');  if (del) { deleteTask(del.dataset.q, del.dataset.id); return; }
+  const add = e.target.closest('.q-plus');    if (add) { addTask(add.dataset.q); return; }
+  const clr = e.target.closest('.q-clr');     if (clr) { clearDone(clr.dataset.q); return; }
+});
+
+document.getElementById('mx').addEventListener('dblclick', e => {
+  const txt = e.target.closest('.task-txt');
+  if (txt) startEdit(txt, txt.dataset.q, txt.dataset.id);
+});
+
+QS.forEach(q => {
+  document.getElementById(`in-${q}`).addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask(q);
+  });
+});
+
+document.querySelectorAll('.pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    filt = btn.dataset.f;
+    render();
+  });
+});
+
+document.getElementById('hClearBtn').onclick = clearAll;
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('confirmWrap').classList.remove('on');
+    document.getElementById('importWrap').classList.remove('on');
+    closeHist(); confFn = null; importData = null;
+  }
+  if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+  if (e.key === 'h' || e.key === 'H') openHist();
+  const map = {'1':'q1','2':'q2','3':'q3','4':'q4'};
+  if (map[e.key]) { document.getElementById(`in-${map[e.key]}`).focus(); e.preventDefault(); }
+});
+
+render();
 </script>
 </body>
 </html>
