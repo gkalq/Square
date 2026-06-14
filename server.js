@@ -47,6 +47,8 @@ function auth(req, res, next) {
   catch { res.status(401).json({ error: 'Unauthorized' }); }
 }
 
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+
 app.post('/api/auth', (req, res) => {
   const { passcode } = req.body || {};
   if (!passcode || !checkPasscode(passcode)) {
