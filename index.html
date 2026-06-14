@@ -548,6 +548,69 @@
     }
 
     #fileIn { display: none; }
+
+    /* ── Lock screen ─────────────────────────────────────── */
+    .lock-screen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity .25s ease;
+    }
+    .lock-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .lock-box {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 16px;
+    }
+
+    .lock-logo {
+      display: grid;
+      grid-template: 1fr 1fr / 1fr 1fr;
+      gap: 4px;
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .lock-logo span { display: block; }
+
+    .lock-title { font-size: 22px; font-weight: 700; color: var(--text); }
+    .lock-sub { font-size: 13px; color: var(--dim); }
+
+    .lock-input {
+      width: 220px;
+      padding: 11px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      text-align: center;
+      outline: none;
+      letter-spacing: 2px;
+      transition: border-color var(--ease);
+    }
+    .lock-input:focus { border-color: var(--q2); }
+    .lock-input::placeholder { letter-spacing: 0; }
+
+    .lock-btn {
+      width: 220px;
+      padding: 11px;
+      background: var(--text);
+      color: var(--bg);
+      border: none; border-radius: 9px;
+      font-size: 13.5px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: opacity var(--ease);
+    }
+    .lock-btn:hover { opacity: .85; }
+    .lock-btn:disabled { opacity: .45; cursor: default; }
+
+    .lock-error {
+      font-size: 12px; color: var(--q1);
+      min-height: 16px; text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -592,6 +655,13 @@
       <polyline points="3 6 5 6 21 6"/>
       <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
       <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+    </svg>
+  </button>
+
+  <button class="hbtn" id="hLockBtn" title="Lock">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0110 0v4"/>
     </svg>
   </button>
 </header>
@@ -707,28 +777,71 @@
 
 <input type="file" id="fileIn" accept=".json">
 
+<!-- Lock screen -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-logo">
+      <span style="background:var(--q1)"></span>
+      <span style="background:var(--q2)"></span>
+      <span style="background:var(--q3)"></span>
+      <span style="background:var(--q4)"></span>
+    </div>
+    <h1 class="lock-title">Matrix</h1>
+    <p class="lock-sub">Enter your passcode to continue</p>
+    <input type="password" id="lockInput" class="lock-input" placeholder="Passcode" autocomplete="current-password">
+    <button id="lockSubmit" class="lock-btn">Unlock</button>
+    <p id="lockError" class="lock-error"></p>
+  </div>
+</div>
+
 <script>
 'use strict';
 
 const QS = ['q1','q2','q3','q4'];
 const QC = { q1:'#f87171', q2:'#60a5fa', q3:'#fbbf24', q4:'#94a3b8' };
-const SK = 'mx3', HK = 'mxh3';
 
-let S = load(SK, { q1:[], q2:[], q3:[], q4:[] });
-let H = load(HK, []);
+let S = { q1:[], q2:[], q3:[], q4:[] };
+let H = [];
 let filt = 'all';
 let drag = null;
 let confFn = null;
 let importData = null;
 let toastTmr = null;
+let saveTimer = null;
 
-// ── Persistence ───────────────────────────────────────────
-function load(k, d) {
-  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; }
+// ── API / Auth ────────────────────────────────────────────
+let token = localStorage.getItem('mx_token');
+
+async function apiGet() {
+  const r = await fetch('/api/data', { headers: { Authorization: `Bearer ${token}` } });
+  if (r.status === 401) { showLock(); return null; }
+  if (!r.ok) throw new Error('fetch failed');
+  return r.json();
 }
+
+async function apiPut() {
+  const r = await fetch('/api/data', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ tasks: S, history: H })
+  });
+  if (r.status === 401) showLock();
+}
+
 function persist() {
-  localStorage.setItem(SK, JSON.stringify(S));
-  localStorage.setItem(HK, JSON.stringify(H));
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => apiPut().catch(() => {}), 500);
+}
+
+function showLock() {
+  token = null;
+  localStorage.removeItem('mx_token');
+  document.getElementById('lockScreen').classList.remove('hidden');
+  setTimeout(() => document.getElementById('lockInput').focus(), 50);
+}
+
+function hideLock() {
+  document.getElementById('lockScreen').classList.add('hidden');
 }
 
 // ── Helpers ───────────────────────────────────────────────
@@ -1083,6 +1196,7 @@ document.querySelectorAll('.pill').forEach(btn => {
 });
 
 document.getElementById('hClearBtn').onclick = clearAll;
+document.getElementById('hLockBtn').onclick = showLock;
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -1096,7 +1210,65 @@ document.addEventListener('keydown', e => {
   if (map[e.key]) { document.getElementById(`in-${map[e.key]}`).focus(); e.preventDefault(); }
 });
 
-render();
+// ── Lock screen ───────────────────────────────────────────
+async function doUnlock() {
+  const input = document.getElementById('lockInput');
+  const errEl = document.getElementById('lockError');
+  const btn   = document.getElementById('lockSubmit');
+  const passcode = input.value;
+  if (!passcode) return;
+
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Unlocking…';
+
+  try {
+    const ar = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passcode })
+    });
+    if (!ar.ok) { errEl.textContent = 'Incorrect passcode'; input.select(); return; }
+    const { token: t } = await ar.json();
+    token = t;
+    localStorage.setItem('mx_token', t);
+    const data = await apiGet();
+    if (!data) return;
+    S = data.tasks;
+    H = data.history;
+    hideLock();
+    render();
+    input.value = '';
+  } catch {
+    errEl.textContent = 'Connection error — please retry.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Unlock';
+  }
+}
+
+document.getElementById('lockSubmit').addEventListener('click', doUnlock);
+document.getElementById('lockInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doUnlock();
+});
+
+// ── Init ──────────────────────────────────────────────────
+async function init() {
+  if (token) {
+    try {
+      const data = await apiGet();
+      if (!data) return;
+      S = data.tasks;
+      H = data.history;
+      hideLock();
+      render();
+    } catch {
+      showLock();
+    }
+  }
+}
+
+init();
 </script>
 </body>
 </html>
