@@ -561,8 +561,26 @@
 
     .lock-box {
       display: flex; flex-direction: column; align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
+
+    .lock-tabs {
+      display: flex; gap: 2px;
+      background: var(--raised);
+      padding: 3px; border-radius: 7px;
+    }
+
+    .lock-tab {
+      padding: 5px 20px;
+      font-size: 12px; font-weight: 500;
+      border-radius: 5px; border: none;
+      background: transparent; color: var(--dim);
+      cursor: pointer; transition: var(--ease);
+      font-family: inherit;
+    }
+
+    .lock-tab.on { background: var(--hover); color: var(--text); }
+    .lock-tab:not(.on):hover { color: var(--text); }
 
     .lock-logo {
       display: grid;
@@ -787,9 +805,13 @@
       <span style="background:var(--q4)"></span>
     </div>
     <h1 class="lock-title">Matrix</h1>
-    <p class="lock-sub">Enter your passcode to continue</p>
+    <div class="lock-tabs">
+      <button class="lock-tab on" id="tabSignIn">Sign in</button>
+      <button class="lock-tab" id="tabSignUp">Sign up</button>
+    </div>
+    <input type="text" id="lockUser" class="lock-input" placeholder="Username" autocomplete="username" spellcheck="false">
     <input type="password" id="lockInput" class="lock-input" placeholder="Passcode" autocomplete="current-password">
-    <button id="lockSubmit" class="lock-btn">Unlock</button>
+    <button id="lockSubmit" class="lock-btn">Sign in</button>
     <p id="lockError" class="lock-error"></p>
   </div>
 </div>
@@ -811,6 +833,8 @@ let saveTimer = null;
 
 // ── API / Auth ────────────────────────────────────────────
 let token = localStorage.getItem('mx_token');
+let currentUser = localStorage.getItem('mx_user');
+let lockMode = 'signin';
 
 async function apiGet() {
   const r = await fetch('/api/data', { headers: { Authorization: `Bearer ${token}` } });
@@ -833,11 +857,26 @@ function persist() {
   saveTimer = setTimeout(() => apiPut().catch(() => {}), 500);
 }
 
+function setLockMode(mode) {
+  lockMode = mode;
+  document.getElementById('tabSignIn').classList.toggle('on', mode === 'signin');
+  document.getElementById('tabSignUp').classList.toggle('on', mode === 'signup');
+  document.getElementById('lockSubmit').textContent = mode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('lockError').textContent = '';
+}
+
 function showLock() {
   token = null;
   localStorage.removeItem('mx_token');
   document.getElementById('lockScreen').classList.remove('hidden');
-  setTimeout(() => document.getElementById('lockInput').focus(), 50);
+  document.getElementById('lockUser').value = currentUser || '';
+  document.getElementById('lockInput').value = '';
+  document.getElementById('lockError').textContent = '';
+  setLockMode('signin');
+  setTimeout(() => {
+    if (currentUser) document.getElementById('lockInput').focus();
+    else document.getElementById('lockUser').focus();
+  }, 50);
 }
 
 function hideLock() {
@@ -1211,45 +1250,58 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Lock screen ───────────────────────────────────────────
+document.getElementById('tabSignIn').addEventListener('click', () => setLockMode('signin'));
+document.getElementById('tabSignUp').addEventListener('click', () => setLockMode('signup'));
+
 async function doUnlock() {
-  const input = document.getElementById('lockInput');
+  const username = document.getElementById('lockUser').value.trim();
+  const passcode = document.getElementById('lockInput').value;
   const errEl = document.getElementById('lockError');
   const btn   = document.getElementById('lockSubmit');
-  const passcode = input.value;
-  if (!passcode) return;
+
+  if (!username || !passcode) { errEl.textContent = 'Username and passcode required'; return; }
 
   errEl.textContent = '';
   btn.disabled = true;
-  btn.textContent = 'Unlocking…';
+  btn.textContent = lockMode === 'signin' ? 'Signing in…' : 'Creating…';
 
   try {
-    const ar = await fetch('/api/auth', {
+    const endpoint = lockMode === 'signin' ? '/api/auth' : '/api/register';
+    const ar = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passcode })
+      body: JSON.stringify({ username, passcode })
     });
-    if (!ar.ok) { errEl.textContent = 'Incorrect passcode'; input.select(); return; }
+    if (!ar.ok) {
+      const err = await ar.json().catch(() => ({}));
+      errEl.textContent = err.error || 'Something went wrong';
+      return;
+    }
     const { token: t } = await ar.json();
     token = t;
+    currentUser = username;
     localStorage.setItem('mx_token', t);
+    localStorage.setItem('mx_user', username);
     const data = await apiGet();
     if (!data) return;
     S = data.tasks;
     H = data.history;
     hideLock();
     render();
-    input.value = '';
+    document.getElementById('lockInput').value = '';
   } catch {
     errEl.textContent = 'Connection error — please retry.';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Unlock';
+    btn.textContent = lockMode === 'signin' ? 'Sign in' : 'Create account';
   }
 }
 
 document.getElementById('lockSubmit').addEventListener('click', doUnlock);
-document.getElementById('lockInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doUnlock();
+['lockUser', 'lockInput'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') doUnlock();
+  });
 });
 
 // ── Init ──────────────────────────────────────────────────
